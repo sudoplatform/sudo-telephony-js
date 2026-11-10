@@ -1,0 +1,131 @@
+{
+  "name": "@sudoplatform/sudo-telephony",
+  "version": "1.0.0",
+  "author": "Anonyome Labs, Inc.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sudoplatform/sudo-telephony-js.git"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "lint": "npm-run-all --parallel lint:eslint lint:prettier",
+    "lint:eslint": "eslint \"{bin,test,src}/**/*.{js,jsx,ts,tsx}\"",
+    "lint:prettier": "prettier -l \"{bin,test,src}/**/*.{js,jsx,ts,tsx,yml}\"",
+    "codegen": "graphql-codegen -c codegen.yml",
+    "verify": "true",
+    "unit-test": "vitest run test/unit",
+    "smoketest": "yarn unit-test && vitest run test/integration/smoketest",
+    "integration-test": "vitest run test/integration",
+    "clean": "rm -rf ./docs ./lib ./cjs ./types",
+    "build": "yarn codegen && yarn lint && yarn build:transpile && yarn build:docs",
+    "build:transpile": "concurrently \"yarn build:transpile:declarations\" \"yarn build:transpile:cjs\" \"yarn build:transpile:esm\"",
+    "build:transpile:declarations": "tsc --project tsconfig.declarations.json",
+    "build:transpile:cjs": "tsc --project tsconfig.commonjs.json",
+    "build:transpile:esm": "tsc",
+    "build:docs": "true"
+  },
+  "main": "./cjs/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "import": "./lib/index.js",
+      "require": "./cjs/index.js",
+      "default": "./lib/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "cjs",
+    "lib",
+    "types",
+    "docs"
+  ],
+  "peerDependencies": {
+    "@sudoplatform/sudo-api-client": "^16.2.0",
+    "@sudoplatform/sudo-common": "^12.2.0",
+    "@sudoplatform/sudo-user": "^17.1.1",
+    "@sudoplatform/sudo-web-crypto-provider": "^12.0.0"
+  },
+  "dependencies": {
+    "graphql": "^17.0.2",
+    "io-ts": "^2.2.22",
+    "tslib": "^2.8.1",
+    "uuid": "^11.1.1",
+    "zen-observable": "^0.10.0"
+  },
+  "resolutions": {
+    "graphql": "^17.0.0",
+    "cross-spawn": "^7.0.5",
+    "braces": "^3.0.3",
+    "@graphql-tools/utils": "^12.0.2",
+    "micromatch": "^4.0.8",
+    "fast-xml-parser": "^5.7.0",
+    "semver": "^7.5.2",
+    "@smithy/config-resolver": "^4.4.6",
+    "undici": "^8.12.2",
+    "tar": "^7.5.21",
+    "postcss": "^8.5.23",
+    "uuid": "^11.1.1",
+    "js-yaml": "^4.3.2"
+  },
+  "devDependencies": {
+    "@aws-amplify/api-graphql": "4.8.10",
+    "@graphql-codegen/add": "^7.1.1",
+    "@graphql-codegen/cli": "^7.4.4",
+    "@graphql-codegen/typed-document-node": "^7.1.1",
+    "@graphql-codegen/typescript": "^6.1.1",
+    "@graphql-codegen/typescript-operations": "^6.1.10",
+    "@sudoplatform/sudo-api-client": "^16.2.0",
+    "@sudoplatform/sudo-common": "^12.2.9",
+    "@sudoplatform/sudo-entitlements": "^18.0.3",
+    "@sudoplatform/sudo-entitlements-admin": "^13.0.2",
+    "@sudoplatform/sudo-profiles": "^19.0.2",
+    "@sudoplatform/sudo-user": "^17.1.1",
+    "@sudoplatform/sudo-web-crypto-provider": "^12.0.2",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
+    "@types/zen-observable": "^0.8.7",
+    "@typescript-eslint/eslint-plugin": "^8.26.1",
+    "@typescript-eslint/parser": "^8.26.1",
+    "@vitest/coverage-v8": "^5.0.0",
+    "concurrently": "^9.2.1",
+    "dotenv": "^17.4.2",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-headers": "^1.3.3",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-tree-shaking": "^1.12.2",
+    "husky": "^9.1.7",
+    "isomorphic-fetch": "^3.0.0",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.6.2",
+    "ts-mockito": "^2.6.1",
+    "typedoc": "^0.28.11",
+    "typescript": "^5.9.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.0",
+    "wait-for-expect": "^4.0.0",
+    "ws": "^8.21.3"
+  },
+  "packageManager": "yarn@4.18.1+sha512.b2e1e7524f654f2749d32b4ebcb4622473cb5bcbc485df2007e12a154e50162a4d795526768bc5f5b8f81717bfd79deb2472813d86fb5ae2eb551fa9c872b08f",
+  "auditSuppressions": {
+    "1120607": {
+      "until": 1797004800,
+      "untilISO": "2026-12-12T00:00:00Z",
+      "reason": "Transitive dep of amazon-cognito-auth-js (deprecated/unmaintained); no fix available without upstream SDK migration"
+    },
+    "1242672": {
+      "until": 1795224255,
+      "untilISO": "2026-11-21T01:24:15Z",
+      "reason": "markdown-it fix too new"
+    },
+    "1244623": {
+      "until": 1802131200,
+      "untilISO": "2027-02-09T00:00:00Z",
+      "reason": "minimatch 10 via typedoc (dev only); fix is minimatch 11, which removes matchOne that typedoc 0.28 uses. Globs are repo-controlled"
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "allowSyntheticDefaultImports": true,
+    "declaration": false,
+    "downlevelIteration": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "lib": ["DOM", "ES2022"],
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "outDir": "lib",
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": true,
+    "target": "ES2022",
+    "typeRoots": ["./typings", "./node_modules/@types"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "typings"]
+}

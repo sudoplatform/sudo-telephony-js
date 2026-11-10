@@ -1,0 +1,16 @@
+.cache
+.DS_Store
+docs
+lib/
+cjs/
+types/
+node_modules
+yarn-error.log
+.yalc
+yalc.lock
+build
+package.json.old
+.dccache
+.env
+.idea/
+.yarn/install-state.gz

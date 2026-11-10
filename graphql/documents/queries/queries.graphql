@@ -1,0 +1,63 @@
+query GetSupportedCountriesForTelephony {
+  getSupportedCountriesForTelephony
+}
+
+query GetTelephonyConfig {
+  getTelephonyConfig {
+    ...TelephonyConfigurationData
+  }
+}
+
+query SearchAvailablePhoneNumbers($input: SearchAvailablePhoneNumbersInput!) {
+  searchAvailablePhoneNumbers(input: $input) {
+    ...PhoneNumberSearch
+  }
+}
+
+query GetPhoneNumber($id: ID!) {
+  getPhoneNumber(id: $id) {
+    ...PhoneNumber
+  }
+}
+
+query ListPhoneNumbers($input: ListPhoneNumbersInput) {
+  listPhoneNumbers(input: $input) {
+    items {
+      ...PhoneNumber
+    }
+    nextToken
+  }
+}
+
+query ListPhoneNumbersForSudoId($input: ListPhoneNumbersForSudoIdInput!) {
+  listPhoneNumbersForSudoId(input: $input) {
+    items {
+      ...PhoneNumber
+    }
+    nextToken
+  }
+}
+
+query GetPhoneMessage($id: ID!) {
+  getPhoneMessage(id: $id) {
+    ...SealedPhoneMessage
+  }
+}
+
+query ListPhoneMessagesForPhoneNumberId($input: ListPhoneMessagesForPhoneNumberIdInput!) {
+  listPhoneMessagesForPhoneNumberId(input: $input) {
+    items {
+      ...SealedPhoneMessage
+    }
+    nextToken
+  }
+}
+
+query ListPhoneMessagesForConversationId($input: ListPhoneMessagesForConversationIdInput!) {
+  listPhoneMessagesForConversationId(input: $input) {
+    items {
+      ...SealedPhoneMessage
+    }
+    nextToken
+  }
+}

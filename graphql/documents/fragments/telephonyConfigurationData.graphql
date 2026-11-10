@@ -1,0 +1,10 @@
+fragment TelephonyConfigurationData on TelephonyConfigurationData {
+  sudoOwnershipProofRequired
+  phoneNumberSearchDefaultLimit
+  phoneNumberSearchMaxLimit
+  phoneNumberSearchLifetimeMs
+  listDefaultLimit
+  listMaxLimit
+  deletePhoneMessagesLimit
+  updatePhoneMessagesLimit
+}

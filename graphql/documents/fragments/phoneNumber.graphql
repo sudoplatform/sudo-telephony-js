@@ -1,0 +1,22 @@
+fragment PhoneNumber on PhoneNumber {
+  id
+  owner
+  owners {
+    id
+    issuer
+  }
+  identityId
+  keyRingId
+  keyIds
+  phoneNumber
+  countryCode
+  numberType
+  areaCode
+  state
+  failureReason
+  gracePeriodEndsAtEpochMs
+  clientRefId
+  version
+  createdAtEpochMs
+  updatedAtEpochMs
+}

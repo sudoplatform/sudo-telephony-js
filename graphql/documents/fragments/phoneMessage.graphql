@@ -1,0 +1,22 @@
+fragment SealedPhoneMessage on SealedPhoneMessage {
+  id
+  owner
+  owners {
+    id
+    issuer
+  }
+  phoneNumberId
+  conversationId
+  type
+  direction
+  localPhoneNumber
+  remotePhoneNumber
+  body
+  segmentCount
+  mediaOmitted
+  seen
+  receivedAtEpochMs
+  version
+  createdAtEpochMs
+  updatedAtEpochMs
+}
