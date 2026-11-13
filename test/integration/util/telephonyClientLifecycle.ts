@@ -31,6 +31,7 @@ import { PrivateSudoTelephonyClientOptions } from '../../../src/private/data/com
 import {
   DefaultSudoTelephonyClient,
   SudoTelephonyClient,
+  SudoTelephonyClientConfig,
 } from '../../../src/public'
 import { EntitlementsBuilder } from './entitlements'
 
@@ -82,6 +83,7 @@ export interface SetupTelephonyClientOutput {
  */
 export const setupTelephonyClient = async (
   log: DefaultLogger,
+  sudoTelephonyClientConfig?: SudoTelephonyClientConfig,
 ): Promise<SetupTelephonyClientOutput> => {
   const adminApiKey = readAdminApiKey()
   if (!adminApiKey) {
@@ -145,6 +147,7 @@ export const setupTelephonyClient = async (
     sudoUserClient: userClient,
     apiClient,
     sudoKeyManager: keyManager,
+    sudoTelephonyClientConfig,
   }
   const telephonyClient = new DefaultSudoTelephonyClient(options)
 

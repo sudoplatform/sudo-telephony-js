@@ -21,7 +21,7 @@ instance of the client.</p>
 <ul class="tsd-hierarchy">
 <li><a href="../interfaces/SudoTelephonyClient.html" class="tsd-signature-type tsd-kind-interface">SudoTelephonyClient</a></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:78</li></ul></aside>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:82</li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -33,7 +33,8 @@ instance of the client.</p>
 </div></section>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="methods">Methods<a href="#methods" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
-<div class="tsd-index-list"><a href="#deletephonemessages" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>delete<wbr/>Phone<wbr/>Messages</span></a>
+<div class="tsd-index-list"><a href="#createsingletonkeysifabsent" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>create<wbr/>Singleton<wbr/>Keys<wbr/>If<wbr/>Absent</span></a>
+<a href="#deletephonemessages" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>delete<wbr/>Phone<wbr/>Messages</span></a>
 <a href="#deprovisionphonenumber" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>deprovision<wbr/>Phone<wbr/>Number</span></a>
 <a href="#exportkeys" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>export<wbr/>Keys</span></a>
 <a href="#getconfigurationdata" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Configuration<wbr/>Data</span></a>
@@ -69,10 +70,34 @@ instance of the client.</p>
 <li><span><span class="tsd-kind-parameter">opts</span>: <a href="../types/SudoTelephonyClientOptions.html" class="tsd-signature-type tsd-kind-type-alias">SudoTelephonyClientOptions</a></span></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="" class="tsd-signature-type tsd-kind-class">DefaultSudoTelephonyClient</a></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:96</li></ul></aside></div></li></ul></section></section></details>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:101</li></ul></aside></div></li></ul></section></section></details>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
 <h2 class="tsd-anchor-link" id="methods-1">Methods<a href="#methods-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h2></summary>
 <section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="createsingletonkeysifabsent"><span>create<wbr/>Singleton<wbr/>Keys<wbr/>If<wbr/>Absent</span><a href="#createsingletonkeysifabsent" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul class="tsd-signatures">
+<li class="">
+<div class="tsd-signature tsd-anchor-link" id="createsingletonkeysifabsent-1"><span class="tsd-kind-call-signature">createSingletonKeysIfAbsent</span><span class="tsd-signature-symbol">()</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/CreateSingletonKeysIfAbsentResult.html" class="tsd-signature-type tsd-kind-interface">CreateSingletonKeysIfAbsentResult</a><span class="tsd-signature-symbol">&gt;</span><a href="#createsingletonkeysifabsent-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Create the singleton key pair every phone number is sealed to, if this device doesn't have it.</p>
+<p>Requires <a href="../types/SudoTelephonyClientConfig.html#enforcesingletonkeypair" class="tsd-kind-property">SudoTelephonyClientConfig.enforceSingletonKeyPair</a>. Call it once the user is signed in, before
+provisioning: <a href="../interfaces/SudoTelephonyClient.html#provisionphonenumber" class="tsd-kind-method">SudoTelephonyClient.provisionPhoneNumber</a> never creates the key, and fails with
+<a href="SingletonKeyPairNotFoundError.html" class="tsd-kind-class">SingletonKeyPairNotFoundError</a> without it.</p>
+<p>The result says whether the key had to be created. If it was, the device's key material has changed, so back
+the keys up again with <a href="../interfaces/SudoTelephonyClient.html#exportkeys" class="tsd-kind-method">SudoTelephonyClient.exportKeys</a>. If the user already has phone numbers, a new key
+also means this device doesn't have the one they're sealed to (for example a second device, or one whose keys
+were removed), so import the user's key backup with <a href="../interfaces/SudoTelephonyClient.html#importkeys" class="tsd-kind-method">SudoTelephonyClient.importKeys</a> instead.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><a href="../interfaces/CreateSingletonKeysIfAbsentResult.html" class="tsd-signature-type tsd-kind-interface">CreateSingletonKeysIfAbsentResult</a><span class="tsd-signature-symbol">&gt;</span></h4><p>Whether the singleton key pair was created, and its ID.</p>
+
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-throws">
+<h4 class="tsd-anchor-link" id="throws">Throws<a href="#throws" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>If the client doesn't enforce a singleton key pair.</p>
+</div></div><aside class="tsd-sources">
+<p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#createsingletonkeysifabsent">createSingletonKeysIfAbsent</a></p>
+<ul>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:369</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="deletephonemessages"><span>delete<wbr/>Phone<wbr/>Messages</span><a href="#deletephonemessages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -95,7 +120,7 @@ than relying on the absence of an error.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#deletephonemessages">deletePhoneMessages</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:306</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:328</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="deprovisionphonenumber"><span>deprovision<wbr/>Phone<wbr/>Number</span><a href="#deprovisionphonenumber" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -107,6 +132,8 @@ than relying on the absence of an error.</p>
 telephony provider in the background. Deprovisioning a number that is already released returns it unchanged,
 so the call is safe to repeat.</p>
 <p>Only a <a href="../enums/PhoneNumberState.html#active" class="tsd-kind-enum-member">PhoneNumberState.Active</a> or <a href="../enums/PhoneNumberState.html#suspended" class="tsd-kind-enum-member">PhoneNumberState.Suspended</a> number can be deprovisioned.</p>
+<p>Unless <a href="../types/SudoTelephonyClientConfig.html#enforcesingletonkeypair" class="tsd-kind-property">SudoTelephonyClientConfig.enforceSingletonKeyPair</a> is set, the number's key pair is then removed
+from the device, so its messages can no longer be unsealed here. The singleton key pair is never removed.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
@@ -118,7 +145,7 @@ so the call is safe to repeat.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#deprovisionphonenumber">deprovisionPhoneNumber</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:189</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:197</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="exportkeys"><span>export<wbr/>Keys</span><a href="#exportkeys" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -131,7 +158,7 @@ so the call is safe to repeat.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#exportkeys">exportKeys</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:347</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:381</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="getconfigurationdata"><span>get<wbr/>Configuration<wbr/>Data</span><a href="#getconfigurationdata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -147,7 +174,7 @@ hard-coding them.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#getconfigurationdata">getConfigurationData</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:143</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:150</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="getphonemessage"><span>get<wbr/>Phone<wbr/>Message</span><a href="#getphonemessage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -170,7 +197,7 @@ cannot be found.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#getphonemessage">getPhoneMessage</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:256</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:278</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="getphonenumber"><span>get<wbr/>Phone<wbr/>Number</span><a href="#getphonenumber" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -193,7 +220,7 @@ be found.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#getphonenumber">getPhoneNumber</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:196</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:218</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="getsupportedcountries"><span>get<wbr/>Supported<wbr/>Countries</span><a href="#getsupportedcountries" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -209,7 +236,7 @@ phone numbers.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#getsupportedcountries">getSupportedCountries</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:137</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:144</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="importkeys"><span>import<wbr/>Keys</span><a href="#importkeys" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -228,7 +255,7 @@ phone numbers.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#importkeys">importKeys</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:353</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:387</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="listphonemessagesforconversationid"><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Conversation<wbr/>Id</span><a href="#listphonemessagesforconversationid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -254,7 +281,7 @@ a conversationId.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#listphonemessagesforconversationid">listPhoneMessagesForConversationId</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:287</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:309</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="listphonemessagesforphonenumberid"><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Phone<wbr/>Number<wbr/>Id</span><a href="#listphonemessagesforphonenumberid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -279,7 +306,7 @@ a phoneNumberId.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#listphonemessagesforphonenumberid">listPhoneMessagesForPhoneNumberId</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:268</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:290</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="listphonenumbers"><span>list<wbr/>Phone<wbr/>Numbers</span><a href="#listphonenumbers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -300,7 +327,7 @@ fetch those by id with <a href="../interfaces/SudoTelephonyClient.html#getphonen
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#listphonenumbers">listPhoneNumbers</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:205</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:227</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="listphonenumbersforsudoid"><span>list<wbr/>Phone<wbr/>Numbers<wbr/>For<wbr/>Sudo<wbr/>Id</span><a href="#listphonenumbersforsudoid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -321,7 +348,7 @@ belongs to another user, reads as an empty page.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#listphonenumbersforsudoid">listPhoneNumbersForSudoId</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:217</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:239</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="provisionphonenumber"><span>provision<wbr/>Phone<wbr/>Number</span><a href="#provisionphonenumber" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -332,6 +359,11 @@ belongs to another user, reads as an empty page.</p>
 <p>The SDK generates the key pair that seals the number's messages, registers the public key with the service,
 and keeps the private key in the device key store. Losing that private key makes the number's messages
 unreadable, so back it up with <a href="../interfaces/SudoTelephonyClient.html#exportkeys" class="tsd-kind-method">SudoTelephonyClient.exportKeys</a>.</p>
+<p>By default each number gets a new key pair. If the service refuses the request, that key pair is removed;
+after any other failure, such as a network error, it is kept, because the number may have been provisioned
+with it. With <a href="../types/SudoTelephonyClientConfig.html#enforcesingletonkeypair" class="tsd-kind-property">SudoTelephonyClientConfig.enforceSingletonKeyPair</a>, every number shares one key pair
+instead, and it is never removed. That key pair must first be created with
+<a href="../interfaces/SudoTelephonyClient.html#createsingletonkeysifabsent" class="tsd-kind-method">SudoTelephonyClient.createSingletonKeysIfAbsent</a>; provisioning never creates it.</p>
 <p>The returned number is in <a href="../enums/PhoneNumberState.html#provisioning" class="tsd-kind-enum-member">PhoneNumberState.Provisioning</a>; the order completes asynchronously with the
 telephony provider. Use <a href="../interfaces/SudoTelephonyClient.html#subscribetophonenumbers" class="tsd-kind-method">SudoTelephonyClient.subscribeToPhoneNumbers</a> to learn when it becomes
 <a href="../enums/PhoneNumberState.html#active" class="tsd-kind-enum-member">PhoneNumberState.Active</a> or <a href="../enums/PhoneNumberState.html#failed" class="tsd-kind-enum-member">PhoneNumberState.Failed</a>.</p>
@@ -348,7 +380,7 @@ Check <a href="../interfaces/SudoTelephonyClient.html#getconfigurationdata" clas
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#provisionphonenumber">provisionPhoneNumber</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:169</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:176</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="reset"><span>reset</span><a href="#reset" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -360,7 +392,7 @@ Check <a href="../interfaces/SudoTelephonyClient.html#getconfigurationdata" clas
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#reset">reset</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:359</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:393</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="searchavailablephonenumbers"><span>search<wbr/>Available<wbr/>Phone<wbr/>Numbers</span><a href="#searchavailablephonenumbers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -382,7 +414,7 @@ provisioned.</p>
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#searchavailablephonenumbers">searchAvailablePhoneNumbers</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:154</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:161</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="subscribetophonemessages"><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Messages</span><a href="#subscribetophonemessages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -408,7 +440,7 @@ occurs.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#subscribetophonemessages">subscribeToPhoneMessages</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:325</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:347</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="subscribetophonenumbers"><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Numbers</span><a href="#subscribetophonenumbers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -435,7 +467,7 @@ occurs.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#subscribetophonenumbers">subscribeToPhoneNumbers</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:234</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:256</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="unsubscribefromphonemessages"><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Messages</span><a href="#unsubscribefromphonemessages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -453,7 +485,7 @@ occurs.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#unsubscribefromphonemessages">unsubscribeFromPhoneMessages</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:337</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:359</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="unsubscribefromphonenumbers"><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Numbers</span><a href="#unsubscribefromphonenumbers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -471,7 +503,7 @@ occurs.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#unsubscribefromphonenumbers">unsubscribeFromPhoneNumbers</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:246</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:268</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="updatephonemessages"><span>update<wbr/>Phone<wbr/>Messages</span><a href="#updatephonemessages" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -492,7 +524,7 @@ batch can partially succeed, in the same way as <a href="../interfaces/SudoTelep
 <aside class="tsd-sources">
 <p>Implementation of <a href="../interfaces/SudoTelephonyClient.html">SudoTelephonyClient</a>.<a href="../interfaces/SudoTelephonyClient.html#updatephonemessages">updatePhoneMessages</a></p>
 <ul>
-<li>Defined in src/public/defaultSudoTelephonyClient.ts:314</li></ul></aside></div></li></ul></section></section></details></div>
+<li>Defined in src/public/defaultSudoTelephonyClient.ts:336</li></ul></aside></div></li></ul></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -511,7 +543,7 @@ batch can partially succeed, in the same way as <a href="../interfaces/SudoTelep
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Constructors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Constructors</summary>
 <div><a href="#constructor"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Constructor"><use href="../assets/icons.svg#icon-512"></use></svg><span>constructor</span></a></div></details>
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Methods"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Methods</summary>
-<div><a href="#deletephonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>delete<wbr/>Phone<wbr/>Messages</span></a><a href="#deprovisionphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>deprovision<wbr/>Phone<wbr/>Number</span></a><a href="#exportkeys"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>export<wbr/>Keys</span></a><a href="#getconfigurationdata"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Configuration<wbr/>Data</span></a><a href="#getphonemessage"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Phone<wbr/>Message</span></a><a href="#getphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Phone<wbr/>Number</span></a><a href="#getsupportedcountries"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Supported<wbr/>Countries</span></a><a href="#importkeys"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>import<wbr/>Keys</span></a><a href="#listphonemessagesforconversationid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Conversation<wbr/>Id</span></a><a href="#listphonemessagesforphonenumberid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Phone<wbr/>Number<wbr/>Id</span></a><a href="#listphonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Numbers</span></a><a href="#listphonenumbersforsudoid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Numbers<wbr/>For<wbr/>Sudo<wbr/>Id</span></a><a href="#provisionphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>provision<wbr/>Phone<wbr/>Number</span></a><a href="#reset"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reset</span></a><a href="#searchavailablephonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>search<wbr/>Available<wbr/>Phone<wbr/>Numbers</span></a><a href="#subscribetophonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Messages</span></a><a href="#subscribetophonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Numbers</span></a><a href="#unsubscribefromphonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Messages</span></a><a href="#unsubscribefromphonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Numbers</span></a><a href="#updatephonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>update<wbr/>Phone<wbr/>Messages</span></a></div></details></div></details></div>
+<div><a href="#createsingletonkeysifabsent"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>create<wbr/>Singleton<wbr/>Keys<wbr/>If<wbr/>Absent</span></a><a href="#deletephonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>delete<wbr/>Phone<wbr/>Messages</span></a><a href="#deprovisionphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>deprovision<wbr/>Phone<wbr/>Number</span></a><a href="#exportkeys"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>export<wbr/>Keys</span></a><a href="#getconfigurationdata"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Configuration<wbr/>Data</span></a><a href="#getphonemessage"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Phone<wbr/>Message</span></a><a href="#getphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Phone<wbr/>Number</span></a><a href="#getsupportedcountries"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>get<wbr/>Supported<wbr/>Countries</span></a><a href="#importkeys"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>import<wbr/>Keys</span></a><a href="#listphonemessagesforconversationid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Conversation<wbr/>Id</span></a><a href="#listphonemessagesforphonenumberid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Phone<wbr/>Number<wbr/>Id</span></a><a href="#listphonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Numbers</span></a><a href="#listphonenumbersforsudoid"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>list<wbr/>Phone<wbr/>Numbers<wbr/>For<wbr/>Sudo<wbr/>Id</span></a><a href="#provisionphonenumber"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>provision<wbr/>Phone<wbr/>Number</span></a><a href="#reset"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>reset</span></a><a href="#searchavailablephonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>search<wbr/>Available<wbr/>Phone<wbr/>Numbers</span></a><a href="#subscribetophonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Messages</span></a><a href="#subscribetophonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>subscribe<wbr/>To<wbr/>Phone<wbr/>Numbers</span></a><a href="#unsubscribefromphonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Messages</span></a><a href="#unsubscribefromphonenumbers"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>unsubscribe<wbr/>From<wbr/>Phone<wbr/>Numbers</span></a><a href="#updatephonemessages"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Method"><use href="../assets/icons.svg#icon-2048"></use></svg><span>update<wbr/>Phone<wbr/>Messages</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../modules.html">@sudoplatform/sudo-telephony</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

@@ -31,6 +31,7 @@ import { PhoneNumberTransformer } from '../private/data/phone-number/transformer
 import { ListPhoneNumbersOutput } from '../private/domain/entities/phone-number/phoneNumberService'
 import { GetConfigurationDataUseCase } from '../private/domain/use-cases/configuration/getConfigurationDataUseCase'
 import { GetSupportedCountriesUseCase } from '../private/domain/use-cases/country/getSupportedCountriesUseCase'
+import { CreateSingletonKeysIfAbsentUseCase } from '../private/domain/use-cases/key/createSingletonKeysIfAbsentUseCase'
 import { ExportKeysUseCase } from '../private/domain/use-cases/key/exportKeysUseCase'
 import { ImportKeysUseCase } from '../private/domain/use-cases/key/importKeysUseCase'
 import { ResetUseCase } from '../private/domain/use-cases/key/resetUseCase'
@@ -43,6 +44,7 @@ import { SubscribeToPhoneMessagesUseCase } from '../private/domain/use-cases/pho
 import { UnsubscribeFromPhoneMessagesUseCase } from '../private/domain/use-cases/phone-message/unsubscribeFromPhoneMessagesUseCase'
 import { UpdatePhoneMessagesUseCase } from '../private/domain/use-cases/phone-message/updatePhoneMessagesUseCase'
 import { SearchAvailablePhoneNumbersUseCase } from '../private/domain/use-cases/phone-number-search/searchAvailablePhoneNumbersUseCase'
+import { DeprovisionedKeyPairRemovalError } from '../private/domain/entities/phone-number/deprovisionedKeyPairRemovalError'
 import { DeprovisionPhoneNumberUseCase } from '../private/domain/use-cases/phone-number/deprovisionPhoneNumberUseCase'
 import { GetPhoneNumberUseCase } from '../private/domain/use-cases/phone-number/getPhoneNumberUseCase'
 import { ListPhoneNumbersForSudoIdUseCase } from '../private/domain/use-cases/phone-number/listPhoneNumbersForSudoIdUseCase'
@@ -60,12 +62,14 @@ import {
   SearchAvailablePhoneNumbersInput,
   UpdatePhoneMessagesInput,
 } from './inputs'
+import { KeyPairRemovalFailedError } from './errors'
 import {
   SudoTelephonyClient,
   SudoTelephonyClientOptions,
 } from './sudoTelephonyClient'
 import {
   ConfigurationData,
+  CreateSingletonKeysIfAbsentResult,
   ListPhoneMessagesResult,
   PhoneMessage,
   PhoneMessageBatchResult,
@@ -91,12 +95,15 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
   private readonly phoneNumberTransformer: PhoneNumberTransformer
   private readonly phoneMessageTransformer: PhoneMessageTransformer
   private readonly sortOrderTransformer: SortOrderTransformer
+  private readonly enforceSingletonKeyPair: boolean
   private readonly log: Logger
 
   public constructor(opts: SudoTelephonyClientOptions) {
     this.log = new DefaultLogger(this.constructor.name)
 
     const privateOptions = opts as PrivateSudoTelephonyClientOptions
+    this.enforceSingletonKeyPair =
+      opts.sudoTelephonyClientConfig?.enforceSingletonKeyPair ?? false
 
     this.apiClient = privateOptions.apiClient ?? new ApiClient()
     this.userClient = opts.sudoUserClient
@@ -176,6 +183,7 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
     const useCase = new ProvisionPhoneNumberUseCase(
       this.phoneNumberService,
       this.deviceKeyWorker,
+      this.enforceSingletonKeyPair,
     )
     const result = await useCase.execute({
       searchId: input.searchId,
@@ -188,9 +196,23 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
 
   public async deprovisionPhoneNumber(id: string): Promise<PhoneNumber> {
     this.log.debug(this.deprovisionPhoneNumber.name, { id })
-    const useCase = new DeprovisionPhoneNumberUseCase(this.phoneNumberService)
-    const result = await useCase.execute(id)
-    return this.phoneNumberTransformer.fromEntityToAPI(result)
+    const useCase = new DeprovisionPhoneNumberUseCase(
+      this.phoneNumberService,
+      this.deviceKeyWorker,
+      this.enforceSingletonKeyPair,
+    )
+    try {
+      const result = await useCase.execute(id)
+      return this.phoneNumberTransformer.fromEntityToAPI(result)
+    } catch (err) {
+      if (err instanceof DeprovisionedKeyPairRemovalError) {
+        throw new KeyPairRemovalFailedError(
+          this.phoneNumberTransformer.fromEntityToAPI(err.deprovisioned),
+          err.cause,
+        )
+      }
+      throw err
+    }
   }
 
   public async getPhoneNumber(id: string): Promise<PhoneNumber | undefined> {
@@ -343,6 +365,18 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
   }
 
   // MARK: Keys
+
+  public async createSingletonKeysIfAbsent(): Promise<CreateSingletonKeysIfAbsentResult> {
+    this.log.debug(this.createSingletonKeysIfAbsent.name)
+    const useCase = new CreateSingletonKeysIfAbsentUseCase(
+      this.deviceKeyWorker,
+      this.enforceSingletonKeyPair,
+    )
+    const result = await useCase.execute()
+    return {
+      keyPair: { created: result.keyPair.created, keyId: result.keyPair.keyId },
+    }
+  }
 
   public async exportKeys(): Promise<ArrayBuffer> {
     this.log.debug(this.exportKeys.name)

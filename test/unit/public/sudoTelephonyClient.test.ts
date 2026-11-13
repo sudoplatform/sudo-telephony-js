@@ -33,11 +33,13 @@ import { SubscribeToPhoneMessagesUseCase } from '../../../src/private/domain/use
 import { UnsubscribeFromPhoneMessagesUseCase } from '../../../src/private/domain/use-cases/phone-message/unsubscribeFromPhoneMessagesUseCase'
 import { ExportKeysUseCase } from '../../../src/private/domain/use-cases/key/exportKeysUseCase'
 import { ImportKeysUseCase } from '../../../src/private/domain/use-cases/key/importKeysUseCase'
+import { CreateSingletonKeysIfAbsentUseCase } from '../../../src/private/domain/use-cases/key/createSingletonKeysIfAbsentUseCase'
 import { ResetUseCase } from '../../../src/private/domain/use-cases/key/resetUseCase'
 import { DefaultPhoneMessageService } from '../../../src/private/data/phone-message/defaultPhoneMessageService'
 import { GetConfigurationDataUseCase } from '../../../src/private/domain/use-cases/configuration/getConfigurationDataUseCase'
 import { GetSupportedCountriesUseCase } from '../../../src/private/domain/use-cases/country/getSupportedCountriesUseCase'
 import { SearchAvailablePhoneNumbersUseCase } from '../../../src/private/domain/use-cases/phone-number-search/searchAvailablePhoneNumbersUseCase'
+import { DeprovisionedKeyPairRemovalError } from '../../../src/private/domain/entities/phone-number/deprovisionedKeyPairRemovalError'
 import { DeprovisionPhoneNumberUseCase } from '../../../src/private/domain/use-cases/phone-number/deprovisionPhoneNumberUseCase'
 import { GetPhoneNumberUseCase } from '../../../src/private/domain/use-cases/phone-number/getPhoneNumberUseCase'
 import { ListPhoneNumbersForSudoIdUseCase } from '../../../src/private/domain/use-cases/phone-number/listPhoneNumbersForSudoIdUseCase'
@@ -47,6 +49,7 @@ import { SubscribeToPhoneNumbersUseCase } from '../../../src/private/domain/use-
 import { UnsubscribeFromPhoneNumbersUseCase } from '../../../src/private/domain/use-cases/phone-number/unsubscribeFromPhoneNumbersUseCase'
 import {
   DefaultSudoTelephonyClient,
+  KeyPairRemovalFailedError,
   PhoneMessageSubscriber,
   SortOrder,
   UnsealingFailedError,
@@ -83,6 +86,9 @@ vi.mock(
 vi.mock('../../../src/private/domain/use-cases/key/exportKeysUseCase')
 vi.mock('../../../src/private/domain/use-cases/key/importKeysUseCase')
 vi.mock('../../../src/private/domain/use-cases/key/resetUseCase')
+vi.mock(
+  '../../../src/private/domain/use-cases/key/createSingletonKeysIfAbsentUseCase',
+)
 vi.mock('../../../src/private/data/phone-message/defaultPhoneMessageService')
 vi.mock('../../../src/private/data/country/defaultCountryService')
 vi.mock(
@@ -161,6 +167,8 @@ describe('SudoTelephonyClient Test Suite', () => {
   const mockExportKeysUseCase = mock<ExportKeysUseCase>()
   const mockImportKeysUseCase = mock<ImportKeysUseCase>()
   const mockResetUseCase = mock<ResetUseCase>()
+  const mockCreateSingletonKeysIfAbsentUseCase =
+    mock<CreateSingletonKeysIfAbsentUseCase>()
 
   const useCaseMocks: [unknown, object][] = [
     [GetPhoneMessageUseCase, mockGetPhoneMessageUseCase],
@@ -182,6 +190,10 @@ describe('SudoTelephonyClient Test Suite', () => {
     [ExportKeysUseCase, mockExportKeysUseCase],
     [ImportKeysUseCase, mockImportKeysUseCase],
     [ResetUseCase, mockResetUseCase],
+    [
+      CreateSingletonKeysIfAbsentUseCase,
+      mockCreateSingletonKeysIfAbsentUseCase,
+    ],
     [GetSupportedCountriesUseCase, mockGetSupportedCountriesUseCase],
     [GetConfigurationDataUseCase, mockGetConfigurationDataUseCase],
     [
@@ -333,6 +345,111 @@ describe('SudoTelephonyClient Test Suite', () => {
       ).resolves.toStrictEqual(APIDataFactory.phoneNumber)
       verify(mockDeprovisionPhoneNumberUseCase.execute('id')).once()
     })
+  })
+
+  describe('deprovisionPhoneNumber key removal failure', () => {
+    it('throws KeyPairRemovalFailedError carrying the transformed released number', async () => {
+      const cause = new Error('remove failed')
+      when(mockDeprovisionPhoneNumberUseCase.execute(anything())).thenReject(
+        new DeprovisionedKeyPairRemovalError(
+          EntityDataFactory.phoneNumber,
+          cause,
+        ),
+      )
+
+      const thrown = await instanceUnderTest
+        .deprovisionPhoneNumber('id')
+        .catch((err: unknown) => err)
+
+      expect(thrown).toBeInstanceOf(KeyPairRemovalFailedError)
+      expect((thrown as KeyPairRemovalFailedError).deprovisioned).toStrictEqual(
+        APIDataFactory.phoneNumber,
+      )
+      expect((thrown as KeyPairRemovalFailedError).cause).toBe(cause)
+    })
+
+    it('passes other errors through unchanged', async () => {
+      const error = new Error('deprovision failed')
+      when(mockDeprovisionPhoneNumberUseCase.execute(anything())).thenReject(
+        error,
+      )
+
+      await expect(instanceUnderTest.deprovisionPhoneNumber('id')).rejects.toBe(
+        error,
+      )
+    })
+  })
+
+  describe('createSingletonKeysIfAbsent', () => {
+    it('returns the use case result', async () => {
+      when(mockCreateSingletonKeysIfAbsentUseCase.execute()).thenResolve({
+        keyPair: { created: true, keyId: 'singletonKeyId' },
+      })
+
+      await expect(
+        instanceUnderTest.createSingletonKeysIfAbsent(),
+      ).resolves.toStrictEqual({
+        keyPair: { created: true, keyId: 'singletonKeyId' },
+      })
+      expect(
+        vi.mocked(CreateSingletonKeysIfAbsentUseCase).mock.calls[0][1],
+      ).toBe(false)
+    })
+  })
+
+  describe('enforceSingletonKeyPair', () => {
+    const newClient = (enforceSingletonKeyPair?: boolean) => {
+      const options: PrivateSudoTelephonyClientOptions = {
+        sudoUserClient: instance(mockUserClient),
+        sudoKeyManager: instance(mockKeyManager),
+        apiClient,
+        sudoTelephonyClientConfig:
+          enforceSingletonKeyPair === undefined
+            ? undefined
+            : { enforceSingletonKeyPair },
+      }
+      return new DefaultSudoTelephonyClient(options)
+    }
+
+    beforeEach(() => {
+      when(mockProvisionPhoneNumberUseCase.execute(anything())).thenResolve(
+        EntityDataFactory.phoneNumber,
+      )
+      when(mockDeprovisionPhoneNumberUseCase.execute(anything())).thenResolve(
+        EntityDataFactory.phoneNumber,
+      )
+    })
+
+    it.each([
+      [undefined, false],
+      [false, false],
+      [true, true],
+    ])(
+      'passes %s to the provision and deprovision use cases as %s',
+      async (configured, expected) => {
+        const client = newClient(configured)
+
+        await client.provisionPhoneNumber({
+          searchId: 'testSearchId',
+          phoneNumber: '+14155550100',
+        })
+        await client.deprovisionPhoneNumber('id')
+        when(mockCreateSingletonKeysIfAbsentUseCase.execute()).thenResolve({
+          keyPair: { created: false, keyId: 'singletonKeyId' },
+        })
+        await client.createSingletonKeysIfAbsent()
+
+        expect(
+          vi.mocked(CreateSingletonKeysIfAbsentUseCase).mock.calls[0][1],
+        ).toBe(expected)
+        expect(vi.mocked(ProvisionPhoneNumberUseCase).mock.calls[0][2]).toBe(
+          expected,
+        )
+        expect(vi.mocked(DeprovisionPhoneNumberUseCase).mock.calls[0][2]).toBe(
+          expected,
+        )
+      },
+    )
   })
 
   describe('getPhoneNumber', () => {

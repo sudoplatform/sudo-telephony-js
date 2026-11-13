@@ -22,7 +22,10 @@ import {
   verify,
   when,
 } from 'ts-mockito'
-import { DefaultDeviceKeyWorker } from '../../../../../src/private/data/common/deviceKeyWorker'
+import {
+  DefaultDeviceKeyWorker,
+  SINGLETON_PUBLIC_KEY_ID,
+} from '../../../../../src/private/data/common/deviceKeyWorker'
 import { InvalidArgumentError } from '../../../../../src/public/errors'
 import { sealString } from '../../../../util/sealing'
 
@@ -265,6 +268,200 @@ describe('DefaultDeviceKeyWorker Test Suite', () => {
         ).rejects.toThrow()
 
         await expect(instanceUnderTest.privateKeyExists(id)).resolves.toBe(true)
+      })
+    })
+
+    describe('getSingletonKeyPair', () => {
+      it('returns undefined and creates nothing when there is no singleton', async () => {
+        const generate = vi.spyOn(keyManager, 'generateKeyPair')
+
+        await expect(
+          instanceUnderTest.getSingletonKeyPair(),
+        ).resolves.toBeUndefined()
+
+        expect(generate).not.toHaveBeenCalled()
+        await expect(
+          keyManager.getPassword(SINGLETON_PUBLIC_KEY_ID),
+        ).resolves.toBeUndefined()
+      })
+
+      it('returns the singleton once it has been created', async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        const key = await instanceUnderTest.getSingletonKeyPair()
+
+        expect(key?.id).toBe(keyId)
+        expect(key?.algorithm).toBe('RSAEncryptionOAEPAESGCM')
+      })
+
+      it('returns undefined when the singleton private key is missing', async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        await keyManager.deleteKeyPair(keyId)
+
+        await expect(
+          instanceUnderTest.getSingletonKeyPair(),
+        ).resolves.toBeUndefined()
+      })
+
+      it('throws FatalError for a private key without its public key', async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        await keyManager.deletePublicKey(keyId)
+
+        await expect(instanceUnderTest.getSingletonKeyPair()).rejects.toThrow(
+          FatalError,
+        )
+      })
+    })
+
+    describe('createSingletonKeyPairIfAbsent', () => {
+      it('creates the singleton, then reports it exists with the same key', async () => {
+        const first = await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        const second = await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        expect(first.created).toBe(true)
+        expect(second).toStrictEqual({ created: false, keyId: first.keyId })
+        await expect(
+          instanceUnderTest.privateKeyExists(first.keyId),
+        ).resolves.toBe(true)
+        const storedId = await keyManager.getPassword(SINGLETON_PUBLIC_KEY_ID)
+        expect(new TextDecoder().decode(storedId)).toBe(first.keyId)
+      })
+
+      it('is distinct from generated key pairs', async () => {
+        const generated = await instanceUnderTest.generateKeyPair()
+
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        expect(keyId).not.toBe(generated.id)
+      })
+
+      it('creates one key pair for concurrent first calls', async () => {
+        const results = await Promise.all([
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+        ])
+
+        expect(new Set(results.map((result) => result.keyId)).size).toBe(1)
+        expect(results.filter((result) => result.created)).toHaveLength(1)
+      })
+
+      it('replaces a singleton whose private key is missing', async () => {
+        const lost = await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        await keyManager.deleteKeyPair(lost.keyId)
+
+        const replacement =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        expect(replacement.created).toBe(true)
+        expect(replacement.keyId).not.toBe(lost.keyId)
+        await expect(
+          instanceUnderTest.getSingletonKeyPair(),
+        ).resolves.toMatchObject({ id: replacement.keyId })
+      })
+
+      it('fails for a private key without its public key, without replacing it', async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        await keyManager.deletePublicKey(keyId)
+
+        await expect(
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+        ).rejects.toThrow(FatalError)
+        const storedId = await keyManager.getPassword(SINGLETON_PUBLIC_KEY_ID)
+        expect(new TextDecoder().decode(storedId)).toBe(keyId)
+      })
+
+      it('does not record an ID when key generation fails', async () => {
+        vi.spyOn(keyManager, 'generateKeyPair').mockRejectedValueOnce(
+          new Error('generation failed'),
+        )
+
+        await expect(
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+        ).rejects.toThrow('generation failed')
+        await expect(
+          keyManager.getPassword(SINGLETON_PUBLIC_KEY_ID),
+        ).resolves.toBeUndefined()
+      })
+
+      it('starts a fresh singleton after removeAllKeys', async () => {
+        const before = await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        await instanceUnderTest.removeAllKeys()
+
+        const after = await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        expect(after.created).toBe(true)
+        expect(after.keyId).not.toBe(before.keyId)
+      })
+    })
+
+    describe('importKeys with a singleton', () => {
+      it("restores the singleton's public key so it can be used on another device", async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+        const original = await instanceUnderTest.getSingletonKeyPair()
+        const sealed = await sealString(keyManager, keyId, 'shared')
+        const targetKeyManager = newKeyManager()
+        const target = new DefaultDeviceKeyWorker(targetKeyManager)
+
+        await target.importKeys(await instanceUnderTest.exportKeys())
+
+        await expect(target.getSingletonKeyPair()).resolves.toStrictEqual(
+          original,
+        )
+        await expect(
+          target.createSingletonKeyPairIfAbsent(),
+        ).resolves.toStrictEqual({ created: false, keyId })
+        await expect(target.unsealString(keyId, sealed)).resolves.toBe('shared')
+      })
+
+      it('restores no public key when the archive has no singleton', async () => {
+        const { id } = await instanceUnderTest.generateKeyPair()
+        const targetKeyManager = newKeyManager()
+        const target = new DefaultDeviceKeyWorker(targetKeyManager)
+
+        await target.importKeys(await instanceUnderTest.exportKeys())
+
+        await expect(target.getSingletonKeyPair()).resolves.toBeUndefined()
+        await expect(targetKeyManager.getPublicKey(id)).resolves.toBeUndefined()
+      })
+    })
+
+    describe('removeKeyPair', () => {
+      it('removes both halves of a key pair', async () => {
+        const { id } = await instanceUnderTest.generateKeyPair()
+
+        await instanceUnderTest.removeKeyPair(id)
+
+        await expect(instanceUnderTest.privateKeyExists(id)).resolves.toBe(
+          false,
+        )
+        await expect(keyManager.getPublicKey(id)).resolves.toBeUndefined()
+      })
+
+      it('never removes the singleton key pair', async () => {
+        const { keyId } =
+          await instanceUnderTest.createSingletonKeyPairIfAbsent()
+
+        await instanceUnderTest.removeKeyPair(keyId)
+
+        await expect(instanceUnderTest.privateKeyExists(keyId)).resolves.toBe(
+          true,
+        )
+        await expect(
+          instanceUnderTest.getSingletonKeyPair(),
+        ).resolves.toMatchObject({ id: keyId })
+      })
+
+      it('does nothing for a key that is not on the device', async () => {
+        await expect(
+          instanceUnderTest.removeKeyPair('missingKeyId'),
+        ).resolves.toBeUndefined()
       })
     })
   })

@@ -5,7 +5,13 @@
  */
 
 import { DefaultLogger, Logger } from '@sudoplatform/sudo-common'
-import { DeviceKeyWorker } from '../../../data/common/deviceKeyWorker'
+import { isDefinitiveRejection } from '../../../data/common/definitiveRejection'
+import {
+  DeviceKey,
+  DeviceKeyWorker,
+} from '../../../data/common/deviceKeyWorker'
+import { SingletonKeyPairNotFoundError } from '../../../../public/errors'
+import { removeKeyPairs } from '../../../util/removeKeyPairs'
 import { PhoneNumberEntity } from '../../entities/phone-number/phoneNumberEntity'
 import { PhoneNumberService } from '../../entities/phone-number/phoneNumberService'
 
@@ -30,10 +36,12 @@ export interface ProvisionPhoneNumberUseCaseInput {
 /**
  * Application business logic for provisioning a phone number.
  *
- * Generates the key pair that seals the number's messages before handing the request to the
+ * Gets the key pair that seals the number's messages before handing the request to the
  * service, so the private key is stored on the device and only the public key is registered.
- * The key is kept if the request fails, because a retry with the same
- * `clientRefId` may return a number registered with it.
+ *
+ * With `enforceSingletonKeyPair`, every number uses the singleton key pair, which must
+ * already exist and is never removed. Otherwise a new key pair is generated per number, and
+ * removed again only when the service definitively refuses the request.
  */
 export class ProvisionPhoneNumberUseCase {
   private readonly log: Logger
@@ -41,6 +49,7 @@ export class ProvisionPhoneNumberUseCase {
   public constructor(
     private readonly phoneNumberService: PhoneNumberService,
     private readonly deviceKeyWorker: DeviceKeyWorker,
+    private readonly enforceSingletonKeyPair: boolean,
   ) {
     this.log = new DefaultLogger(this.constructor.name)
   }
@@ -51,19 +60,48 @@ export class ProvisionPhoneNumberUseCase {
     this.log.debug(this.constructor.name, {
       searchId: input.searchId,
       clientRefId: input.clientRefId,
+      enforceSingletonKeyPair: this.enforceSingletonKeyPair,
     })
-    const key = await this.deviceKeyWorker.generateKeyPair()
-    return await this.phoneNumberService.provision({
-      searchId: input.searchId,
-      phoneNumber: input.phoneNumber,
-      key: {
-        keyId: key.id,
-        algorithm: key.algorithm,
-        keyFormat: key.format,
-        publicKey: key.data,
-      },
-      ownershipProofToken: input.ownershipProofToken,
-      clientRefId: input.clientRefId,
-    })
+    const key = this.enforceSingletonKeyPair
+      ? await this.requireSingletonKeyPair()
+      : await this.deviceKeyWorker.generateKeyPair()
+    try {
+      return await this.phoneNumberService.provision({
+        searchId: input.searchId,
+        phoneNumber: input.phoneNumber,
+        key: {
+          keyId: key.id,
+          algorithm: key.algorithm,
+          keyFormat: key.format,
+          publicKey: key.data,
+        },
+        ownershipProofToken: input.ownershipProofToken,
+        clientRefId: input.clientRefId,
+      })
+    } catch (err) {
+      if (!this.enforceSingletonKeyPair && isDefinitiveRejection(err)) {
+        // Best effort: the provisioning error is the one to report.
+        const failures = await removeKeyPairs(this.deviceKeyWorker, [key.id])
+        for (const failure of failures) {
+          this.log.warn(
+            'could not remove the key pair of a rejected provision; it stays on this device',
+            { keyId: failure.keyId, err: failure.error },
+          )
+        }
+      }
+      throw err
+    }
+  }
+
+  /**
+   * The singleton key pair, which `createSingletonKeysIfAbsent` creates. Provisioning never
+   * creates it, so the app always knows when the device's key material changes.
+   */
+  private async requireSingletonKeyPair(): Promise<DeviceKey> {
+    const key = await this.deviceKeyWorker.getSingletonKeyPair()
+    if (!key) {
+      throw new SingletonKeyPairNotFoundError()
+    }
+    return key
   }
 }

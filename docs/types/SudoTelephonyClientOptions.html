@@ -13,9 +13,9 @@
 <section class="tsd-panel tsd-comment">
 <div class="tsd-comment tsd-typography"><p>Options used to construct a <a href="../classes/DefaultSudoTelephonyClient.html" class="tsd-kind-class">DefaultSudoTelephonyClient</a>.</p>
 </div></section>
-<div class="tsd-signature"><span class="tsd-signature-keyword">type</span> <span class="tsd-kind-type-alias">SudoTelephonyClientOptions</span> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#sudocryptoprovider">sudoCryptoProvider</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">SudoCryptoProvider</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#sudouserclient">sudoUserClient</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">SudoUserClient</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
+<div class="tsd-signature"><span class="tsd-signature-keyword">type</span> <span class="tsd-kind-type-alias">SudoTelephonyClientOptions</span> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#sudocryptoprovider">sudoCryptoProvider</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">SudoCryptoProvider</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#sudotelephonyclientconfig">sudoTelephonyClientConfig</a><span class="tsd-signature-symbol">?:</span> <a href="SudoTelephonyClientConfig.html" class="tsd-signature-type tsd-kind-type-alias">SudoTelephonyClientConfig</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#sudouserclient">sudoUserClient</a><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">SudoUserClient</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/sudoTelephonyClient.ts:308</li></ul></aside>
+<li>Defined in src/public/sudoTelephonyClient.ts:356</li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -24,6 +24,7 @@
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading tsd-anchor-link" id="properties">Properties<a href="#properties" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-index-list"><a href="#sudocryptoprovider" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>Crypto<wbr/>Provider?</span></a>
+<a href="#sudotelephonyclientconfig" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>Telephony<wbr/>Client<wbr/>Config?</span></a>
 <a href="#sudouserclient" class="tsd-index-link"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>User<wbr/>Client</span></a>
 </div></section></div></details></section></section>
 <details class="tsd-panel-group tsd-member-group tsd-accordion" open><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -35,14 +36,21 @@
 <div class="tsd-comment tsd-typography"><p>SudoCryptoProvider to use. Default is to create a WebSudoCryptoProvider</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/sudoTelephonyClient.ts:312</li></ul></aside></section>
+<li>Defined in src/public/sudoTelephonyClient.ts:360</li></ul></aside></section>
+<section class="tsd-panel tsd-member">
+<h3 class="tsd-anchor-link" id="sudotelephonyclientconfig"><code class="tsd-tag">Optional</code><span>sudo<wbr/>Telephony<wbr/>Client<wbr/>Config</span><a href="#sudotelephonyclientconfig" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<div class="tsd-signature"><span class="tsd-kind-property">sudoTelephonyClientConfig</span><span class="tsd-signature-symbol">?:</span> <a href="SudoTelephonyClientConfig.html" class="tsd-signature-type tsd-kind-type-alias">SudoTelephonyClientConfig</a></div>
+<div class="tsd-comment tsd-typography"><p>Client configuration to use. Default is <a href="SudoTelephonyClientConfig.html" class="tsd-kind-type-alias">SudoTelephonyClientConfig</a>'s defaults</p>
+</div><aside class="tsd-sources">
+<ul>
+<li>Defined in src/public/sudoTelephonyClient.ts:362</li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="sudouserclient"><span>sudo<wbr/>User<wbr/>Client</span><a href="#sudouserclient" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">sudoUserClient</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">SudoUserClient</span></div>
 <div class="tsd-comment tsd-typography"><p>Sudo User client to use. No default</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/sudoTelephonyClient.ts:310</li></ul></aside></section></section></details></div>
+<li>Defined in src/public/sudoTelephonyClient.ts:358</li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">
@@ -59,7 +67,7 @@
 <h3>On This Page</h3></summary>
 <div class="tsd-accordion-details">
 <details open class="tsd-accordion tsd-page-navigation-section"><summary class="tsd-accordion-summary" data-key="section-Properties"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>Properties</summary>
-<div><a href="#sudocryptoprovider"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>Crypto<wbr/>Provider</span></a><a href="#sudouserclient"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>User<wbr/>Client</span></a></div></details></div></details></div>
+<div><a href="#sudocryptoprovider"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>Crypto<wbr/>Provider</span></a><a href="#sudotelephonyclientconfig"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>Telephony<wbr/>Client<wbr/>Config</span></a><a href="#sudouserclient"><svg class="tsd-kind-icon" viewBox="0 0 24 24" aria-label="Property"><use href="../assets/icons.svg#icon-1024"></use></svg><span>sudo<wbr/>User<wbr/>Client</span></a></div></details></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="../modules.html">@sudoplatform/sudo-telephony</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

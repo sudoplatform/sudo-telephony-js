@@ -18,6 +18,7 @@ import {
 } from './inputs'
 import {
   ConfigurationData,
+  CreateSingletonKeysIfAbsentResult,
   ListPhoneMessagesResult,
   PhoneMessage,
   PhoneMessageBatchResult,
@@ -84,6 +85,12 @@ export interface SudoTelephonyClient {
    * and keeps the private key in the device key store. Losing that private key makes the number's messages
    * unreadable, so back it up with {@link SudoTelephonyClient.exportKeys}.
    *
+   * By default each number gets a new key pair. If the service refuses the request, that key pair is removed;
+   * after any other failure, such as a network error, it is kept, because the number may have been provisioned
+   * with it. With {@link SudoTelephonyClientConfig.enforceSingletonKeyPair}, every number shares one key pair
+   * instead, and it is never removed. That key pair must first be created with
+   * {@link SudoTelephonyClient.createSingletonKeysIfAbsent}; provisioning never creates it.
+   *
    * The returned number is in {@link PhoneNumberState.Provisioning}; the order completes asynchronously with the
    * telephony provider. Use {@link SudoTelephonyClient.subscribeToPhoneNumbers} to learn when it becomes
    * {@link PhoneNumberState.Active} or {@link PhoneNumberState.Failed}.
@@ -104,6 +111,9 @@ export interface SudoTelephonyClient {
    * so the call is safe to repeat.
    *
    * Only a {@link PhoneNumberState.Active} or {@link PhoneNumberState.Suspended} number can be deprovisioned.
+   *
+   * Unless {@link SudoTelephonyClientConfig.enforceSingletonKeyPair} is set, the number's key pair is then removed
+   * from the device, so its messages can no longer be unsealed here. The singleton key pair is never removed.
    *
    * @param {string} id The identifier of the phone number to deprovision.
    * @returns {PhoneNumber} The deprovisioned phone number, in {@link PhoneNumberState.Released}.
@@ -282,6 +292,23 @@ export interface SudoTelephonyClient {
   unsubscribeFromPhoneMessages(subscriptionId: string): void
 
   /**
+   * Create the singleton key pair every phone number is sealed to, if this device doesn't have it.
+   *
+   * Requires {@link SudoTelephonyClientConfig.enforceSingletonKeyPair}. Call it once the user is signed in, before
+   * provisioning: {@link SudoTelephonyClient.provisionPhoneNumber} never creates the key, and fails with
+   * {@link SingletonKeyPairNotFoundError} without it.
+   *
+   * The result says whether the key had to be created. If it was, the device's key material has changed, so back
+   * the keys up again with {@link SudoTelephonyClient.exportKeys}. If the user already has phone numbers, a new key
+   * also means this device doesn't have the one they're sealed to (for example a second device, or one whose keys
+   * were removed), so import the user's key backup with {@link SudoTelephonyClient.importKeys} instead.
+   *
+   * @returns {CreateSingletonKeysIfAbsentResult} Whether the singleton key pair was created, and its ID.
+   * @throws {InvalidConfigError} If the client doesn't enforce a singleton key pair.
+   */
+  createSingletonKeysIfAbsent(): Promise<CreateSingletonKeysIfAbsentResult>
+
+  /**
    * Export the cryptographic keys to a key archive.
    *
    * @returns Key archive data, to be imported with {@link SudoTelephonyClient.importKeys}.
@@ -303,6 +330,27 @@ export interface SudoTelephonyClient {
 }
 
 /**
+ * Configuration of a {@link DefaultSudoTelephonyClient}.
+ */
+export type SudoTelephonyClientConfig = {
+  /**
+   * Whether every phone number is provisioned with the same key pair. Default is `false`.
+   *
+   * When `true`, every number the SDK provisions is registered with one key pair, which the
+   * app creates with {@link SudoTelephonyClient.createSingletonKeysIfAbsent} after
+   * initialising the client. Messages are still sealed, but all numbers' messages are sealed
+   * to that key. It is never removed when a number is deprovisioned or fails to provision,
+   * including after the flag is turned off again; only {@link SudoTelephonyClient.reset}
+   * removes it. A key archive from {@link SudoTelephonyClient.exportKeys} then holds one key
+   * however many numbers there are.
+   *
+   * When `false`, each number gets its own key pair, which is removed from the device when
+   * the number is deprovisioned or the service refuses to provision it.
+   */
+  enforceSingletonKeyPair?: boolean
+}
+
+/**
  * Options used to construct a {@link DefaultSudoTelephonyClient}.
  */
 export type SudoTelephonyClientOptions = {
@@ -310,4 +358,6 @@ export type SudoTelephonyClientOptions = {
   sudoUserClient: SudoUserClient
   /** SudoCryptoProvider to use. Default is to create a WebSudoCryptoProvider */
   sudoCryptoProvider?: SudoCryptoProvider
+  /** Client configuration to use. Default is {@link SudoTelephonyClientConfig}'s defaults */
+  sudoTelephonyClientConfig?: SudoTelephonyClientConfig
 }

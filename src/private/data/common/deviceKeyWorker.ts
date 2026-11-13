@@ -6,6 +6,7 @@
 
 import {
   Base64,
+  Buffer as BufferUtil,
   DecodeError,
   DefaultLogger,
   DefaultSudoKeyArchive,
@@ -13,17 +14,26 @@ import {
   FatalError,
   KeyArchiveKeyType,
   Logger,
+  PublicKey,
   PublicKeyFormat,
   SudoKeyManager,
 } from '@sudoplatform/sudo-common'
+import { Mutex } from 'async-mutex'
 import { v4 } from 'uuid'
 import { InvalidArgumentError } from '../../../public/errors'
+import { rsaPublicKeyFromRSAPrivateKey } from './rsaPublicKey'
 
 /**
  * The only algorithm the SDK asks the service to seal messages with: an
  * RSA-OAEP wrapped AES-256 key, then AES-GCM ciphertext.
  */
 export const SEALING_ALGORITHM = 'RSAEncryptionOAEPAESGCM'
+
+/**
+ * Name of the password entry holding the ID of the singleton key pair. It is stored as a
+ * password so that key export and import carry it with the private key.
+ */
+export const SINGLETON_PUBLIC_KEY_ID = 'singleton-key-id'
 
 /** Size of the RSA-OAEP encrypted AES key at the start of a sealed value. */
 const RSA_BLOCK_SIZE = 256
@@ -49,6 +59,18 @@ export interface DeviceKey {
   format: PublicKeyFormat
 }
 
+/**
+ * The outcome of `createSingletonKeyPairIfAbsent`.
+ *
+ * @interface SingletonKeyPairResult
+ * @property {boolean} created Whether the key pair had to be created.
+ * @property {string} keyId Unique identifier of the singleton key pair.
+ */
+export interface SingletonKeyPairResult {
+  created: boolean
+  keyId: string
+}
+
 export interface DeviceKeyWorker {
   /**
    * Generate a new key pair and keep it on the device.
@@ -56,6 +78,38 @@ export interface DeviceKeyWorker {
    * @returns {DeviceKey} The public half of the new key pair.
    */
   generateKeyPair(): Promise<DeviceKey>
+
+  /**
+   * Get the key pair shared by every phone number provisioned while the client enforces a
+   * singleton key pair. Never creates it; see `createSingletonKeyPairIfAbsent`.
+   *
+   * @returns {DeviceKey | undefined} The public half of the singleton key pair, or
+   *  `undefined` if no singleton is recorded or its private key isn't on this device.
+   * @throws {FatalError} If the device holds the singleton's private key without its public
+   *  key. `importKeys` restores the public key, so that means the key store is inconsistent.
+   */
+  getSingletonKeyPair(): Promise<DeviceKey | undefined>
+
+  /**
+   * Create the singleton key pair if this device doesn't have it.
+   *
+   * The key pair's ID is recorded in the key store, so `exportKeys` and `importKeys` carry it
+   * and `removeAllKeys` clears it. If the recorded key pair's private key is missing, a new
+   * singleton replaces it, and the replacement is logged as an error.
+   *
+   * @returns {SingletonKeyPairResult} Whether the key pair was created, and its ID.
+   * @throws {FatalError} If the device holds the singleton's private key without its public
+   *  key.
+   */
+  createSingletonKeyPairIfAbsent(): Promise<SingletonKeyPairResult>
+
+  /**
+   * Remove a key pair from the device. The singleton key pair is never removed, so the
+   * call does nothing for it. Removing a key pair that doesn't exist succeeds.
+   *
+   * @param {string} keyId The unique identifier of the key pair.
+   */
+  removeKeyPair(keyId: string): Promise<void>
 
   /**
    * Whether this device holds the private key of a key pair.
@@ -96,6 +150,11 @@ export interface DeviceKeyWorker {
 
 export class DefaultDeviceKeyWorker implements DeviceKeyWorker {
   private readonly log: Logger
+  /**
+   * Guards every read-modify-write of the singleton key pair's record, so concurrent calls
+   * can't each create a singleton or remove one another is recording.
+   */
+  private readonly singletonLock = new Mutex()
 
   constructor(private readonly keyManager: SudoKeyManager) {
     this.log = new DefaultLogger(this.constructor.name)
@@ -109,12 +168,54 @@ export class DefaultDeviceKeyWorker implements DeviceKeyWorker {
       this.log.error('generated key pair has no public key', { keyPairId })
       throw new FatalError('Could not generate public key pair')
     }
-    return {
-      id: keyPairId,
-      algorithm: SEALING_ALGORITHM,
-      data: Base64.encode(publicKey.keyData),
-      format: publicKey.keyFormat,
-    }
+    return this.toDeviceKey(keyPairId, publicKey)
+  }
+
+  async getSingletonKeyPair(): Promise<DeviceKey | undefined> {
+    return await this.singletonLock.runExclusive(() =>
+      this.existingSingletonKeyPair(),
+    )
+  }
+
+  async createSingletonKeyPairIfAbsent(): Promise<SingletonKeyPairResult> {
+    return await this.singletonLock.runExclusive(async () => {
+      const existing = await this.existingSingletonKeyPair()
+      if (existing) {
+        return { created: false, keyId: existing.id }
+      }
+      // No singleton yet, or its private key is missing: start a new one. Generate before
+      // recording the ID, so a failed generation never leaves the record naming a key that
+      // doesn't exist.
+      const missingKeyId = await this.getSingletonKeyPairId()
+      const key = await this.generateKeyPair()
+      try {
+        await this.recordSingletonKeyPairId(key.id)
+      } catch (err) {
+        await this.keyManager.deleteKeyPair(key.id).catch(() => undefined)
+        throw err
+      }
+      if (missingKeyId) {
+        // Numbers sealed to the missing key can't be read here until a key archive
+        // containing it is imported.
+        this.log.error(
+          'singleton key pair has no private key on this device, replaced it',
+          { missingKeyId, replacementKeyId: key.id },
+        )
+      } else {
+        this.log.info('created the singleton key pair', { keyId: key.id })
+      }
+      return { created: true, keyId: key.id }
+    })
+  }
+
+  async removeKeyPair(keyId: string): Promise<void> {
+    await this.singletonLock.runExclusive(async () => {
+      if (keyId === (await this.getSingletonKeyPairId())) {
+        this.log.info('not removing the singleton key pair', { keyId })
+        return
+      }
+      await this.keyManager.deleteKeyPair(keyId)
+    })
   }
 
   async privateKeyExists(keyId: string): Promise<boolean> {
@@ -178,24 +279,105 @@ export class DefaultDeviceKeyWorker implements DeviceKeyWorker {
     // existing keys in place.
     await unarchiver.unarchive(undefined)
 
-    // Snapshot every existing key, so that a failure while saving the imported keys
-    // can be rolled back rather than leaving the device without its keys.
-    const snapshot = await this.snapshotKeys()
+    // Import replaces the singleton key pair's record along with every key.
+    await this.singletonLock.runExclusive(async () => {
+      // Snapshot every existing key, so that a failure while saving the imported keys
+      // can be rolled back rather than leaving the device without its keys.
+      const snapshot = await this.snapshotKeys()
 
-    await this.keyManager.removeAllKeys()
-    try {
-      await unarchiver.saveKeys()
-    } catch (err) {
-      this.log.error('failed to save imported keys, restoring previous keys', {
-        err,
-      })
-      await this.restoreKeys(snapshot)
-      throw err
-    }
+      await this.keyManager.removeAllKeys()
+      try {
+        await unarchiver.saveKeys()
+        await this.restoreSingletonPublicKey()
+      } catch (err) {
+        this.log.error(
+          'failed to save imported keys, restoring previous keys',
+          {
+            err,
+          },
+        )
+        await this.restoreKeys(snapshot)
+        throw err
+      }
+    })
   }
 
   async removeAllKeys(): Promise<void> {
     await this.keyManager.removeAllKeys()
+  }
+
+  private toDeviceKey(keyId: string, publicKey: PublicKey): DeviceKey {
+    return {
+      id: keyId,
+      algorithm: SEALING_ALGORITHM,
+      data: Base64.encode(publicKey.keyData),
+      format: publicKey.keyFormat,
+    }
+  }
+
+  private async getSingletonKeyPairId(): Promise<string | undefined> {
+    const stored = await this.keyManager.getPassword(SINGLETON_PUBLIC_KEY_ID)
+    if (!stored || stored.byteLength === 0) {
+      return undefined
+    }
+    return BufferUtil.toString(stored)
+  }
+
+  private async recordSingletonKeyPairId(keyId: string): Promise<void> {
+    await this.keyManager.deletePassword(SINGLETON_PUBLIC_KEY_ID)
+    await this.keyManager.addPassword(
+      BufferUtil.fromString(keyId),
+      SINGLETON_PUBLIC_KEY_ID,
+    )
+  }
+
+  /**
+   * The singleton key pair, or `undefined` if none is recorded or its private key isn't on
+   * this device. Call while holding the singleton lock.
+   */
+  private async existingSingletonKeyPair(): Promise<DeviceKey | undefined> {
+    const keyId = await this.getSingletonKeyPairId()
+    if (!keyId) {
+      return undefined
+    }
+    const publicKey = await this.keyManager.getPublicKey(keyId)
+    if (publicKey) {
+      return this.toDeviceKey(keyId, publicKey)
+    }
+    // Import restores the public key, so a private key without one means the key store is
+    // inconsistent. Treating it as missing would replace the key and split numbers across
+    // two "singleton" keys, so fail instead.
+    if (await this.keyManager.doesPrivateKeyExist(keyId)) {
+      throw new FatalError(
+        `Singleton key pair ${keyId} has a private key but no public key`,
+      )
+    }
+    return undefined
+  }
+
+  /**
+   * Stores the singleton key pair's public key again after an import. `exportKeys` leaves
+   * public keys out of the archive, so an import restores only the private key. Provisioning
+   * registers the public key, so it is derived from the private key here, once.
+   */
+  private async restoreSingletonPublicKey(): Promise<void> {
+    const keyId = await this.getSingletonKeyPairId()
+    if (!keyId || (await this.keyManager.getPublicKey(keyId))) {
+      return
+    }
+    const privateKey =
+      await this.keyManager.exportPrivateKeyAsRSAPrivateKey(keyId)
+    if (!privateKey) {
+      return
+    }
+    await this.keyManager.importPublicKeyFromRSAPublicKey(
+      keyId,
+      rsaPublicKeyFromRSAPrivateKey(privateKey),
+    )
+    this.log.info(
+      'restored the public key of the singleton key pair from its private key',
+      { keyId },
+    )
   }
 
   /**

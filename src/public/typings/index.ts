@@ -5,6 +5,7 @@
  */
 
 export * from './configurationData'
+export * from './createSingletonKeysIfAbsentResult'
 export * from './phoneMessage'
 export * from './phoneMessageBatchResult'
 export * from './phoneMessageEvent'
