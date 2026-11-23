@@ -14,3 +14,4 @@ package.json.old
 .env
 .idea/
 .yarn/install-state.gz
+.devcontainer/

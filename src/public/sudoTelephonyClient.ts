@@ -318,8 +318,17 @@ export interface SudoTelephonyClient {
   /**
    * Imports cryptographic keys from a key archive.
    *
+   * The device's existing keys are replaced. If the import fails, they are restored.
+   * Keys exported under another namespace, for example by another platform's SDK, are
+   * stored under this client's namespace.
+   *
    * @param archiveData Key archive data to import the keys from, as returned by
-   *  {@link SudoTelephonyClient.exportKeys}.
+   *  {@link SudoTelephonyClient.exportKeys} on any platform.
+   * @throws {InvalidArgumentError} If the archive is empty.
+   * @throws {KeyArchiveContainsNoKeysError} If the archive holds no keys that could be
+   *  imported.
+   * @throws {KeyArchiveMixedNamespacesError} If the archive holds keys from more than one
+   *  namespace.
    */
   importKeys(archiveData: ArrayBuffer): Promise<void>
 
@@ -351,6 +360,16 @@ export type SudoTelephonyClientConfig = {
 }
 
 /**
+ * Namespace the SDK's keys are stored under on the device when no `keyNamespace` or
+ * `sudoCryptoProvider` is supplied.
+ *
+ * Aligning the default across platforms is under discussion. Changing it would move
+ * existing keys out of reach, so it would only happen in a major version. Apps that need
+ * a stable namespace should supply `keyNamespace`.
+ */
+export const DEFAULT_KEY_NAMESPACE = 'sudo-telephony'
+
+/**
  * Options used to construct a {@link DefaultSudoTelephonyClient}.
  */
 export type SudoTelephonyClientOptions = {
@@ -358,6 +377,22 @@ export type SudoTelephonyClientOptions = {
   sudoUserClient: SudoUserClient
   /** SudoCryptoProvider to use. Default is to create a WebSudoCryptoProvider */
   sudoCryptoProvider?: SudoCryptoProvider
+  /**
+   * Namespace the SDK's keys are stored under on the device. Default is
+   * {@link DEFAULT_KEY_NAMESPACE}.
+   *
+   * Use a different namespace for each Sudo Platform SDK in the app: SDKs share some key
+   * names, so two SDKs in one namespace can overwrite each other's keys. It must not
+   * contain `.`, which other platforms' key managers use to separate the namespace from
+   * the key name. Can't be combined with `sudoCryptoProvider`, which has its own namespace.
+   *
+   * `importKeys` accepts key archives exported under any single namespace, including
+   * other platforms' SDK defaults, and stores the keys under this one.
+   *
+   * @throws {InvalidArgumentError} From the constructor if the namespace is empty,
+   *  contains `.`, or is supplied together with `sudoCryptoProvider`.
+   */
+  keyNamespace?: string
   /** Client configuration to use. Default is {@link SudoTelephonyClientConfig}'s defaults */
   sudoTelephonyClientConfig?: SudoTelephonyClientConfig
 }

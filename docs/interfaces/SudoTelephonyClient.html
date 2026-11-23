@@ -217,17 +217,32 @@ phone numbers.</p>
 <div class="tsd-signature tsd-anchor-link" id="importkeys-1"><span class="tsd-kind-call-signature">importKeys</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">archiveData</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ArrayBuffer</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#importkeys-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Imports cryptographic keys from a key archive.</p>
+<p>The device's existing keys are replaced. If the import fails, they are restored.
+Keys exported under another namespace, for example by another platform's SDK, are
+stored under this client's namespace.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li><span><span class="tsd-kind-parameter">archiveData</span>: <span class="tsd-signature-type">ArrayBuffer</span></span>
 <div class="tsd-comment tsd-typography"><p>Key archive data to import the keys from, as returned by
-<a href="#exportkeys" class="tsd-kind-method">SudoTelephonyClient.exportKeys</a>.</p>
+<a href="#exportkeys" class="tsd-kind-method">SudoTelephonyClient.exportKeys</a> on any platform.</p>
 </div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
+<div class="tsd-comment tsd-typography">
+<div class="tsd-tag-throws">
+<h4 class="tsd-anchor-link" id="throws-1">Throws<a href="#throws-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>If the archive is empty.</p>
+</div>
+<div class="tsd-tag-throws">
+<h4 class="tsd-anchor-link" id="throws-2">Throws<a href="#throws-2" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>If the archive holds no keys that could be
+imported.</p>
+</div>
+<div class="tsd-tag-throws">
+<h4 class="tsd-anchor-link" id="throws-3">Throws<a href="#throws-3" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h4><p>If the archive holds keys from more than one
+namespace.</p>
+</div></div><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/sudoTelephonyClient.ts:324</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/sudoTelephonyClient.ts:333</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="listphonemessagesforconversationid"><span>list<wbr/>Phone<wbr/>Messages<wbr/>For<wbr/>Conversation<wbr/>Id</span><a href="#listphonemessagesforconversationid" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">
@@ -358,7 +373,7 @@ Check <a href="#getconfigurationdata" class="tsd-kind-method">SudoTelephonyClien
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in src/public/sudoTelephonyClient.ts:329</li></ul></aside></div></li></ul></section>
+<li>Defined in src/public/sudoTelephonyClient.ts:338</li></ul></aside></div></li></ul></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="searchavailablephonenumbers"><span>search<wbr/>Available<wbr/>Phone<wbr/>Numbers</span><a href="#searchavailablephonenumbers" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <ul class="tsd-signatures">

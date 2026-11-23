@@ -19,8 +19,13 @@ import {
   SudoKeyManager,
 } from '@sudoplatform/sudo-common'
 import { Mutex } from 'async-mutex'
+import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate'
 import { v4 } from 'uuid'
-import { InvalidArgumentError } from '../../../public/errors'
+import {
+  InvalidArgumentError,
+  KeyArchiveContainsNoKeysError,
+  KeyArchiveMixedNamespacesError,
+} from '../../../public/errors'
 import { rsaPublicKeyFromRSAPrivateKey } from './rsaPublicKey'
 
 /**
@@ -42,6 +47,71 @@ const AES_GCM_IV_SIZE = 12
 /** Size of the AES-GCM authentication tag at the end of the ciphertext. */
 const AES_GCM_TAG_SIZE = 16
 const MINIMUM_SEALED_SIZE = RSA_BLOCK_SIZE + AES_GCM_IV_SIZE + AES_GCM_TAG_SIZE
+
+/**
+ * Moves every key in a key archive to `namespace`.
+ *
+ * Each SDK writes its keys under its own namespace, and the platforms' defaults differ.
+ * Android archives may also leave the namespace out altogether. The archive only saves
+ * keys whose namespace matches a key manager, and skips the rest, so without this an
+ * archive exported by another platform's SDK would import no keys at all.
+ *
+ * An archive that isn't an unencrypted version 3 archive is returned unchanged, for
+ * `DefaultSudoKeyArchive` to accept or reject.
+ *
+ * @param {ArrayBuffer} archiveData The key archive, as exported by any of the SDKs.
+ * @param {string} namespace The namespace of this device's key manager.
+ * @returns {ArrayBuffer} The key archive with every key in `namespace`.
+ * @throws {KeyArchiveMixedNamespacesError} If the archive's keys are in more than one
+ *  namespace. SDKs share some key names, so moving them all into one namespace could
+ *  overwrite one key with another.
+ */
+export const toKeyNamespace = (
+  archiveData: ArrayBuffer,
+  namespace: string,
+): ArrayBuffer => {
+  let archive: { Type?: unknown; Keys?: unknown }
+  try {
+    archive = JSON.parse(strFromU8(gunzipSync(new Uint8Array(archiveData))))
+  } catch {
+    return archiveData
+  }
+  if (archive?.Type !== 'Insecure' || !Array.isArray(archive.Keys)) {
+    return archiveData
+  }
+  const keys = archive.Keys as unknown[]
+  const namespaces = new Set(
+    keys
+      .filter((key) => typeof key === 'object' && key !== null)
+      .map((key) => (key as { NameSpace?: unknown }).NameSpace)
+      // Keys with no namespace, as Android writes them, belong to whichever
+      // namespace the archive's other keys are in.
+      .filter(
+        (keyNamespace) => keyNamespace !== undefined && keyNamespace !== '',
+      ),
+  )
+  if (namespaces.size > 1) {
+    throw new KeyArchiveMixedNamespacesError(
+      `The key archive holds keys from more than one namespace: ${[...namespaces].join(', ')}`,
+    )
+  }
+  if (
+    keys.every(
+      (key) =>
+        typeof key !== 'object' ||
+        key === null ||
+        (key as { NameSpace?: unknown }).NameSpace === namespace,
+    )
+  ) {
+    return archiveData
+  }
+  archive.Keys = keys.map((key) =>
+    typeof key === 'object' && key !== null
+      ? { ...key, NameSpace: namespace }
+      : key,
+  )
+  return gzipSync(strToU8(JSON.stringify(archive))).slice().buffer
+}
 
 /**
  * The public half of a key pair held on this device.
@@ -273,7 +343,7 @@ export class DefaultDeviceKeyWorker implements DeviceKeyWorker {
       throw new InvalidArgumentError('The key archive is empty')
     }
     const unarchiver = new DefaultSudoKeyArchive(this.keyManager, {
-      archiveData,
+      archiveData: toKeyNamespace(archiveData, this.keyManager.namespace),
     })
     // Read the archive before removing anything, so an unreadable archive leaves the
     // existing keys in place.
@@ -288,6 +358,14 @@ export class DefaultDeviceKeyWorker implements DeviceKeyWorker {
       await this.keyManager.removeAllKeys()
       try {
         await unarchiver.saveKeys()
+        // The archive only saves keys whose namespace has a key manager, and skips the
+        // rest without an error, so check something was actually saved. Otherwise the
+        // device would be left with no keys and the import would appear to succeed.
+        if ((await this.keyManager.exportKeys()).length === 0) {
+          throw new KeyArchiveContainsNoKeysError(
+            'The key archive contains no keys that could be imported',
+          )
+        }
         await this.restoreSingletonPublicKey()
       } catch (err) {
         this.log.error(

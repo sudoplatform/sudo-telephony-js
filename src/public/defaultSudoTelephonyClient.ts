@@ -62,8 +62,9 @@ import {
   SearchAvailablePhoneNumbersInput,
   UpdatePhoneMessagesInput,
 } from './inputs'
-import { KeyPairRemovalFailedError } from './errors'
+import { InvalidArgumentError, KeyPairRemovalFailedError } from './errors'
 import {
+  DEFAULT_KEY_NAMESPACE,
   SudoTelephonyClient,
   SudoTelephonyClientOptions,
 } from './sudoTelephonyClient'
@@ -105,6 +106,19 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
     this.enforceSingletonKeyPair =
       opts.sudoTelephonyClientConfig?.enforceSingletonKeyPair ?? false
 
+    if (opts.keyNamespace !== undefined) {
+      if (opts.sudoCryptoProvider) {
+        throw new InvalidArgumentError(
+          'Supply keyNamespace or sudoCryptoProvider, not both: the provider has its own namespace',
+        )
+      }
+      if (!opts.keyNamespace || opts.keyNamespace.includes('.')) {
+        throw new InvalidArgumentError(
+          'keyNamespace must be non-empty and must not contain "."',
+        )
+      }
+    }
+
     this.apiClient = privateOptions.apiClient ?? new ApiClient()
     this.userClient = opts.sudoUserClient
     this.keyManager =
@@ -112,7 +126,7 @@ export class DefaultSudoTelephonyClient implements SudoTelephonyClient {
       new DefaultSudoKeyManager(
         opts.sudoCryptoProvider ??
           new WebSudoCryptoProvider(
-            'SudoTelephonyClient',
+            opts.keyNamespace ?? DEFAULT_KEY_NAMESPACE,
             'com.sudoplatform.appservicename',
           ),
       )

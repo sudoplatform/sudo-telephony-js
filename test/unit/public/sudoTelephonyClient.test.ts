@@ -9,6 +9,8 @@ import {
   SudoKeyManager,
 } from '@sudoplatform/sudo-common'
 import { SudoUserClient } from '@sudoplatform/sudo-user'
+import { WebSudoCryptoProvider } from '@sudoplatform/sudo-web-crypto-provider'
+import { gunzipSync, strFromU8 } from 'fflate'
 import {
   anything,
   capture,
@@ -48,7 +50,9 @@ import { ProvisionPhoneNumberUseCase } from '../../../src/private/domain/use-cas
 import { SubscribeToPhoneNumbersUseCase } from '../../../src/private/domain/use-cases/phone-number/subscribeToPhoneNumbersUseCase'
 import { UnsubscribeFromPhoneNumbersUseCase } from '../../../src/private/domain/use-cases/phone-number/unsubscribeFromPhoneNumbersUseCase'
 import {
+  DEFAULT_KEY_NAMESPACE,
   DefaultSudoTelephonyClient,
+  InvalidArgumentError,
   KeyPairRemovalFailedError,
   PhoneMessageSubscriber,
   SortOrder,
@@ -395,6 +399,85 @@ describe('SudoTelephonyClient Test Suite', () => {
         vi.mocked(CreateSingletonKeysIfAbsentUseCase).mock.calls[0][1],
       ).toBe(false)
     })
+  })
+
+  describe('keyNamespace', () => {
+    const APP_SERVICE_NAME = 'com.sudoplatform.appservicename'
+
+    // Creates a key through the device key worker the client hands to its use cases,
+    // then reads the namespace recorded in the exported key archive.
+    const namespacesOfKeysCreatedBy = async (
+      options: Partial<PrivateSudoTelephonyClientOptions>,
+    ): Promise<string[]> => {
+      const client = new DefaultSudoTelephonyClient({
+        sudoUserClient: instance(mockUserClient),
+        apiClient,
+        ...options,
+      } as PrivateSudoTelephonyClientOptions)
+      await client.exportKeys()
+      const deviceKeyWorker = vi.mocked(ExportKeysUseCase).mock.calls[0][0]
+      await deviceKeyWorker.generateKeyPair()
+      const archive = JSON.parse(
+        strFromU8(
+          gunzipSync(new Uint8Array(await deviceKeyWorker.exportKeys())),
+        ),
+      ) as { Keys: { NameSpace: string }[] }
+      return [...new Set(archive.Keys.map((key) => key.NameSpace))]
+    }
+
+    it('defaults to the SudoTelephonyClient namespace', async () => {
+      expect(DEFAULT_KEY_NAMESPACE).toBe('sudo-telephony')
+      await expect(namespacesOfKeysCreatedBy({})).resolves.toStrictEqual([
+        'sudo-telephony',
+      ])
+    })
+
+    it('stores keys under the supplied keyNamespace', async () => {
+      await expect(
+        namespacesOfKeysCreatedBy({ keyNamespace: 'customNamespace' }),
+      ).resolves.toStrictEqual(['customNamespace'])
+    })
+
+    it('uses the supplied sudoCryptoProvider namespace', async () => {
+      await expect(
+        namespacesOfKeysCreatedBy({
+          sudoCryptoProvider: new WebSudoCryptoProvider(
+            'providerNamespace',
+            APP_SERVICE_NAME,
+          ),
+        }),
+      ).resolves.toStrictEqual(['providerNamespace'])
+    })
+
+    const newClientWith = (
+      options: Partial<PrivateSudoTelephonyClientOptions>,
+    ) =>
+      new DefaultSudoTelephonyClient({
+        sudoUserClient: instance(mockUserClient),
+        apiClient,
+        ...options,
+      } as PrivateSudoTelephonyClientOptions)
+
+    it('rejects keyNamespace together with sudoCryptoProvider', () => {
+      expect(() =>
+        newClientWith({
+          keyNamespace: 'customNamespace',
+          sudoCryptoProvider: new WebSudoCryptoProvider(
+            'providerNamespace',
+            APP_SERVICE_NAME,
+          ),
+        }),
+      ).toThrow(InvalidArgumentError)
+    })
+
+    it.each(['', 'com.sudoplatform.telephony'])(
+      'rejects the keyNamespace %j',
+      (keyNamespace) => {
+        expect(() => newClientWith({ keyNamespace })).toThrow(
+          InvalidArgumentError,
+        )
+      },
+    )
   })
 
   describe('enforceSingletonKeyPair', () => {

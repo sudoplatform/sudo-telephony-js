@@ -133,3 +133,28 @@ export class UnsealingFailedError extends TelephonyError {
     this.cause = cause
   }
 }
+
+/**
+ * The key archive held no keys this device could use, so nothing was imported. The keys
+ * that were on the device before the import are kept.
+ *
+ * This happens with an archive exported from a device with no keys, or one whose keys
+ * are all of types the SDK doesn't import.
+ */
+export class KeyArchiveContainsNoKeysError extends TelephonyError {
+  constructor(msg?: string) {
+    super(msg)
+  }
+}
+
+/**
+ * The key archive holds keys from more than one namespace, for example a backup that
+ * combines several SDKs' keys. Some SDKs use the same key names, so importing them all
+ * into this SDK's namespace would overwrite one key with another. Pass only this SDK's
+ * archive to `importKeys`. Nothing was imported.
+ */
+export class KeyArchiveMixedNamespacesError extends TelephonyError {
+  constructor(msg?: string) {
+    super(msg)
+  }
+}

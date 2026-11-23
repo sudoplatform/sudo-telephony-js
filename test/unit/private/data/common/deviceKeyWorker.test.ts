@@ -7,12 +7,14 @@
 import {
   Base64,
   DecodeError,
+  DefaultSudoKeyArchive,
   DefaultSudoKeyManager,
   FatalError,
   PublicKeyFormat,
   SudoKeyManager,
 } from '@sudoplatform/sudo-common'
 import { WebSudoCryptoProvider } from '@sudoplatform/sudo-web-crypto-provider'
+import { gunzipSync, gzipSync, strFromU8, strToU8 } from 'fflate'
 import {
   anything,
   capture,
@@ -25,9 +27,38 @@ import {
 import {
   DefaultDeviceKeyWorker,
   SINGLETON_PUBLIC_KEY_ID,
+  toKeyNamespace,
 } from '../../../../../src/private/data/common/deviceKeyWorker'
-import { InvalidArgumentError } from '../../../../../src/public/errors'
+import {
+  InvalidArgumentError,
+  KeyArchiveContainsNoKeysError,
+  KeyArchiveMixedNamespacesError,
+} from '../../../../../src/public/errors'
 import { sealString } from '../../../../util/sealing'
+
+type ArchivedKey = { NameSpace?: string } & Record<string, unknown>
+
+const newKeyManagerIn = (namespace: string) =>
+  new DefaultSudoKeyManager(
+    new WebSudoCryptoProvider(namespace, 'com.sudoplatform.appservicename'),
+  )
+
+const readArchive = (archive: ArrayBuffer) =>
+  JSON.parse(strFromU8(gunzipSync(new Uint8Array(archive)))) as {
+    Keys: ArchivedKey[]
+  }
+
+const readArchiveKeys = (archive: ArrayBuffer) => readArchive(archive).Keys
+
+/** Rewrites the keys of an unencrypted key archive, as another platform might write them. */
+const editArchiveKeys = (
+  archive: ArrayBuffer,
+  edit: (keys: ArchivedKey[]) => ArchivedKey[],
+): ArrayBuffer => {
+  const decoded = readArchive(archive)
+  decoded.Keys = edit(decoded.Keys)
+  return gzipSync(strToU8(JSON.stringify(decoded))).slice().buffer
+}
 
 describe('DefaultDeviceKeyWorker Test Suite', () => {
   describe('with a mock key manager', () => {
@@ -258,6 +289,83 @@ describe('DefaultDeviceKeyWorker Test Suite', () => {
         await expect(target.privateKeyExists(sourceKey.id)).resolves.toBe(false)
       })
 
+      // The Android and iOS SDKs export their keys under their own default namespaces.
+      it.each(['tels', 'sudo-telephony'])(
+        'imports keys exported under the %s namespace',
+        async (otherNamespace) => {
+          const otherKeyManager = new DefaultSudoKeyManager(
+            new WebSudoCryptoProvider(
+              otherNamespace,
+              'com.sudoplatform.appservicename',
+            ),
+          )
+          const other = new DefaultDeviceKeyWorker(otherKeyManager)
+          const { keyId } = await other.createSingletonKeyPairIfAbsent()
+          const generated = await other.generateKeyPair()
+          const sealed = await sealString(otherKeyManager, keyId, 'mobile')
+
+          await instanceUnderTest.importKeys(await other.exportKeys())
+
+          await expect(
+            instanceUnderTest.privateKeyExists(generated.id),
+          ).resolves.toBe(true)
+          await expect(
+            instanceUnderTest.unsealString(keyId, sealed),
+          ).resolves.toBe('mobile')
+          await expect(
+            instanceUnderTest.createSingletonKeyPairIfAbsent(),
+          ).resolves.toStrictEqual({ created: false, keyId })
+        },
+      )
+
+      // Android archives leave the namespace out of each key.
+      it('imports keys from an archive whose keys have no namespace', async () => {
+        const other = new DefaultDeviceKeyWorker(newKeyManagerIn('tels'))
+        const { keyId } = await other.createSingletonKeyPairIfAbsent()
+        const archive = editArchiveKeys(await other.exportKeys(), (keys) =>
+          keys.map(({ NameSpace: _omitted, ...key }) => key),
+        )
+
+        await instanceUnderTest.importKeys(archive)
+
+        await expect(instanceUnderTest.privateKeyExists(keyId)).resolves.toBe(
+          true,
+        )
+        await expect(
+          instanceUnderTest.createSingletonKeyPairIfAbsent(),
+        ).resolves.toStrictEqual({ created: false, keyId })
+      })
+
+      it('rejects an archive with keys from several namespaces and keeps the existing keys', async () => {
+        const { id } = await instanceUnderTest.generateKeyPair()
+        const email = new DefaultDeviceKeyWorker(newKeyManagerIn('eml'))
+        await email.generateKeyPair()
+        const emailKeys = readArchiveKeys(await email.exportKeys())
+        const other = new DefaultDeviceKeyWorker(newKeyManagerIn('tels'))
+        await other.generateKeyPair()
+        const archive = editArchiveKeys(await other.exportKeys(), (keys) => [
+          ...keys,
+          ...emailKeys,
+        ])
+
+        await expect(instanceUnderTest.importKeys(archive)).rejects.toThrow(
+          KeyArchiveMixedNamespacesError,
+        )
+
+        await expect(instanceUnderTest.privateKeyExists(id)).resolves.toBe(true)
+      })
+
+      it('rejects an archive with no keys and keeps the existing keys', async () => {
+        const { id } = await instanceUnderTest.generateKeyPair()
+        const empty = new DefaultDeviceKeyWorker(newKeyManagerIn('tels'))
+
+        await expect(
+          instanceUnderTest.importKeys(await empty.exportKeys()),
+        ).rejects.toThrow(KeyArchiveContainsNoKeysError)
+
+        await expect(instanceUnderTest.privateKeyExists(id)).resolves.toBe(true)
+      })
+
       it('keeps the existing keys when the archive cannot be read', async () => {
         const { id } = await instanceUnderTest.generateKeyPair()
 
@@ -464,5 +572,79 @@ describe('DefaultDeviceKeyWorker Test Suite', () => {
         ).resolves.toBeUndefined()
       })
     })
+  })
+})
+
+describe('toKeyNamespace', () => {
+  const newKeyManager = (namespace: string) =>
+    new DefaultSudoKeyManager(
+      new WebSudoCryptoProvider(namespace, 'com.sudoplatform.appservicename'),
+    )
+
+  const keyManagerWithKey = async (namespace: string) => {
+    const keyManager = newKeyManager(namespace)
+    await new DefaultDeviceKeyWorker(keyManager).generateKeyPair()
+    return keyManager
+  }
+
+  it('returns a password protected archive unchanged', async () => {
+    const keyArchive = new DefaultSudoKeyArchive(
+      await keyManagerWithKey('tels'),
+    )
+    await keyArchive.loadKeys()
+    const archive = await keyArchive.archive(
+      new TextEncoder().encode('password').buffer,
+    )
+
+    expect(toKeyNamespace(archive, 'SudoTelephonyClient')).toBe(archive)
+  })
+
+  it('moves keys with no namespace into the target namespace', async () => {
+    const archive = editArchiveKeys(
+      await new DefaultDeviceKeyWorker(
+        await keyManagerWithKey('tels'),
+      ).exportKeys(),
+      (keys) => keys.map(({ NameSpace: _omitted, ...key }) => key),
+    )
+
+    const moved = readArchiveKeys(toKeyNamespace(archive, 'target'))
+
+    expect(moved.length).toBeGreaterThan(0)
+    expect(moved.map((key) => key.NameSpace)).toStrictEqual(
+      moved.map(() => 'target'),
+    )
+  })
+
+  it('throws for an archive with keys from several namespaces', async () => {
+    const telephony = await new DefaultDeviceKeyWorker(
+      await keyManagerWithKey('tels'),
+    ).exportKeys()
+    const emailKeys = readArchiveKeys(
+      await new DefaultDeviceKeyWorker(
+        await keyManagerWithKey('eml'),
+      ).exportKeys(),
+    )
+    const combined = editArchiveKeys(telephony, (keys) => [
+      ...keys,
+      ...emailKeys,
+    ])
+
+    expect(() => toKeyNamespace(combined, 'target')).toThrow(
+      KeyArchiveMixedNamespacesError,
+    )
+  })
+
+  it('returns an archive already in the target namespace unchanged', async () => {
+    const archive = await new DefaultDeviceKeyWorker(
+      await keyManagerWithKey('SudoTelephonyClient'),
+    ).exportKeys()
+
+    expect(toKeyNamespace(archive, 'SudoTelephonyClient')).toBe(archive)
+  })
+
+  it('returns data that is not a gzipped archive unchanged', () => {
+    const data = new TextEncoder().encode('not an archive').buffer
+
+    expect(toKeyNamespace(data, 'SudoTelephonyClient')).toBe(data)
   })
 })
